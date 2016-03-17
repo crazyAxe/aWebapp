@@ -6,10 +6,10 @@ import time
 from orm import Model, StringField, BooleanField, TextField, FloatField
 
 def next_id():
-    return '%s015d%s' % (time.time()*1000, uuid.uuid4().hex)
+    return '%s015d%s' % (int(time.time() * 1000), uuid.uuid4().hex)
 
 class User(Model):
-    __table__ = 'user'
+    __table__ = 'users'
 
     id = StringField(primary_key=True, default=next_id, ddl='varchar(50)')
     email = StringField(ddl='varchar(50)')
@@ -20,7 +20,7 @@ class User(Model):
     create_at = FloatField(default=time.time)
 
 class Blog(Model):
-    __table__ = 'blog'
+    __table__ = 'blogs'
 
     id = StringField(primary_key=True, default=next_id, ddl='varchar(50)')
     user_id = StringField(ddl='varchar(50)')
