@@ -102,7 +102,11 @@ class ModelMetaclass(type):
         attrs['__delete__'] = 'delete from `%s` where `%s`=?' % (tableName, primaryKey)
         return type.__new__(cls, name, bases, attrs)
 
-
+def create_args_string(num):
+    L = []
+    for n in range(num):
+        L.append('?')
+    return ','.join(L)
 
 class Model(dict, metaclass=ModelMetaclass):
     def __init__(self, **kw):
@@ -129,7 +133,7 @@ class Model(dict, metaclass=ModelMetaclass):
                 logging.debug('using default value for %s: %s' % (key, str(value)))
                 setattr(self, key, value)
         return value
-
+# ===============================================================
     @classmethod
     @asyncio.coroutine
     def find(cls, pk):
@@ -139,16 +143,76 @@ class Model(dict, metaclass=ModelMetaclass):
             return None
         return cls(**rs[0])
 
+
+    @classmethod
+    @asyncio.coroutine
+    def findAll(cls, where=None, args=None, **kw):
+        sql = [cls.__select__]
+        if where:
+            sql.append('where')
+            sql.append(where)
+        if args is None:
+            args = []
+
+        orderBy = kw.get('orderBy', None)
+        if orderBy:
+            sql.append('Order by')
+            sql.append(orderBy)
+
+        limit = kw.get('limit', None)
+        if limit is not None:
+            sql.append('limit')
+            if isinstance(limit, int):
+                sql.append('?')
+                args.append(limit)
+            elif isinstance(limit, tuple):
+                sql.append('?,?')
+                args.extend(limit)
+            else:
+                raise ValueError('Invalid limit value: %s' % str(limit))
+
+        rs = yield from select(''.join(sql), args)
+        return [cls(**r) for r in rs]
+
+    @classmethod
+    @asyncio.coroutine
+    def findNumber(cls, selectedFields, where=None, args=None):
+        sql = ['select %s _number_ from `%s`' %(selectedFields, cls.__table__)]
+        if where is not None:
+            sql.append('where')
+            args.append(where)
+        rs = yield from select(' '.join(sql), args)
+        if rs==0:
+            return None
+        return rs[0]['_number_']
+
     @asyncio.coroutine
     def save(self):
         args = list(map(self.getValueOrDefault(), self.__fields__))
-        args.append(self.getValueOrDefault(self.__primary__))
+        args.append(self.getValueOrDefault(self.__primary_key__))
         rows = yield from execute(self.__insert__, args)
-        if rows !=1:
-            logging.warn('failed to insert record:affected rows: %s ' % rows)
+        if rows!=1:
+            logging.warning('failed to insert record:affected rows: %s ' % rows)
+
+    @asyncio.coroutine
+    def update(self):
+        args = list(map(self.getValue(), self.__fields__))
+        args.append(self.getValue(self.__primary_key__))
+        rows = yield from execute(self.__update__, args)
+        if rows!=1:
+            logging.warning('failed to insert record:affected rows: %s ' % rows)
+
+    @asyncio.coroutine
+    def remove(self):
+        args = [self.getValue(self.__primary_key__)]
+        rows = yield from execute(self.__delete__,args)
+        if rows!=1:
+            logging.warning('failed to insert record:affected rows: %s ' % rows)
 
 
 
+
+# =============================属性类=============================
 class Field(object):
     def __init__(self, name, column_type, primary_key, default):
         self.name = name
@@ -159,9 +223,24 @@ class Field(object):
         return '<%s, %s:%s> ' % (self.__class__.name, self.column_type, self.name)
 
 class StringField(Field):
-    def __init__(self, name=None, primary_key=False, default=None, ddl='varchar'(100):
+    def __init__(self, name=None, primary_key=False, default=None, ddl='varchar'(100)):
         super().__init__(name, ddl, primary_key, default)
 
+class BooleanField(Field):
+    def __init__(self, name=None, default=False):
+        super().__init__(name, 'boolean', False, default)
+
+class IntergerField(Field):
+    def __init__(self, name=None, primary_key=False, default=0):
+        super().__init__(name, 'biginit', primary_key, default)
+
+class FloatField(Field):
+    def __init__(self, name=None, primary_key=False, default=0.0):
+        super().__init__(name, 'real', primary_key, default)
+
+class TextField(Field):
+    def __init__(self, name=None, default=None):
+        super().__init__(name, 'text', False, default)
 
 
 
