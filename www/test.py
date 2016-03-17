@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
 # -*- coding:utf8 -*-
 
-import www.static.orm, asyncio
-from www.statc.models import User, Blog, Comment
+import  asyncio
+import orm
+from models import User, Blog, Comment
 
 def test(loop):
     yield from orm.create_pool(loop=loop, user='root', password='password', db='myblog')
@@ -10,6 +11,6 @@ def test(loop):
 
     yield from u.save
 
-loop = asyncio.get_event_loop();
+loop = asyncio.get_event_loop()
 loop.run_until_complete(test(loop))
 loop.close()

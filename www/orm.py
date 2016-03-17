@@ -82,7 +82,7 @@ class ModelMetaclass(type):
                         raise RuntimeError('Duplicate primary key for field: %s' % k)
                     primaryKey = k
                 else:
-                    fields.appends(k)
+                    fields.append(k)
         if not primaryKey:
             raise RuntimeError('Primary key not found.')
         for k in mappings.keys():
@@ -191,7 +191,7 @@ class Model(dict, metaclass=ModelMetaclass):
         args = list(map(self.getValueOrDefault(), self.__fields__))
         args.append(self.getValueOrDefault(self.__primary_key__))
         rows = yield from execute(self.__insert__, args)
-        if rows!=1:
+        if rows != 1:
             logging.warning('failed to insert record:affected rows: %s ' % rows)
 
     @asyncio.coroutine
@@ -199,14 +199,14 @@ class Model(dict, metaclass=ModelMetaclass):
         args = list(map(self.getValue(), self.__fields__))
         args.append(self.getValue(self.__primary_key__))
         rows = yield from execute(self.__update__, args)
-        if rows!=1:
+        if rows != 1:
             logging.warning('failed to insert record:affected rows: %s ' % rows)
 
     @asyncio.coroutine
     def remove(self):
         args = [self.getValue(self.__primary_key__)]
         rows = yield from execute(self.__delete__,args)
-        if rows!=1:
+        if rows != 1:
             logging.warning('failed to insert record:affected rows: %s ' % rows)
 
 
@@ -217,13 +217,13 @@ class Field(object):
     def __init__(self, name, column_type, primary_key, default):
         self.name = name
         self.column_type = column_type
-        self.primary_kye = primary_key
+        self.primary_key = primary_key
         self.default = default
     def __str__(self):
-        return '<%s, %s:%s> ' % (self.__class__.name, self.column_type, self.name)
+        return '<%s, %s:%s> ' % (self.__class__.__name__, self.column_type, self.name)
 
 class StringField(Field):
-    def __init__(self, name=None, primary_key=False, default=None, ddl='varchar'(100)):
+    def __init__(self, name=None, primary_key=False, default=None, ddl='varchar(100)'):
         super().__init__(name, ddl, primary_key, default)
 
 class BooleanField(Field):

@@ -3,7 +3,7 @@
 
 import uuid
 import time
-from www.static.orm import Model, StringField, BooleanField, TextField, FloatField
+from orm import Model, StringField, BooleanField, TextField, FloatField
 
 def next_id():
     return '%s015d%s' % (time.time()*1000, uuid.uuid4().hex)
