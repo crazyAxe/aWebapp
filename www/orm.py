@@ -87,9 +87,10 @@ class ModelMetaclass(type):
             raise RuntimeError('Primary key not found.')
         for k in mappings.keys():
             attrs.pop(k)
+            logging.info(' pop %s from attrs' % k)
 
         escaped_fields = list(map(lambda f: '`%s`' % f, fields))
-        attrs['__mappings__'] = mappings # 保存属性和列的映射关系
+        attrs['__mappings__'] = mappings  # 保存属性和列的映射关系
         attrs['__talbe__'] = tableName
         attrs['__primary_key__'] = primaryKey
         attrs['__fields__'] = fields # 除主键外的属性名
@@ -188,15 +189,16 @@ class Model(dict, metaclass=ModelMetaclass):
 
     @asyncio.coroutine
     def save(self):
-        args = list(map(self.getValueOrDefault(), self.__fields__))
+        args = list(map(self.getValueOrDefault, self.__fields__))
         args.append(self.getValueOrDefault(self.__primary_key__))
+        logging.info(args)
         rows = yield from execute(self.__insert__, args)
         if rows != 1:
             logging.warning('failed to insert record:affected rows: %s ' % rows)
 
     @asyncio.coroutine
     def update(self):
-        args = list(map(self.getValue(), self.__fields__))
+        args = list(map(self.getValue, self.__fields__))
         args.append(self.getValue(self.__primary_key__))
         rows = yield from execute(self.__update__, args)
         if rows != 1:
