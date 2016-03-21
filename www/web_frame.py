@@ -16,11 +16,9 @@ from apis import APIError
 # 关于decorator,可以参考Kaiming Wan 的blog：kaimingwan.com/post/python/pythonzhuang-shi-qi-ying-yong
 
 def get(path):
-    '''
+    """
         define decorator @get('/path')
-    :param path:
-    :return:
-    '''
+    """
     def decorator(func):
         @functools.wraps(func)
         def wrapper(*para, **kw):
@@ -32,9 +30,9 @@ def get(path):
 
 
 def post(path):
-    '''
-    Define decorator @post('/path')
-    '''
+    """
+        Define decorator @post('/path')
+    """
     def decorator(func):
         @functools.wraps(func)
         def wrapper(*para, **kw):
@@ -88,7 +86,7 @@ def has_var_kw_args(func):
 def has_request_args(func):
     # 判断是否有request参数，并且request参数必须在普通参数之后，及在*kw, **kw ,* 或者 *args 之后
 
-    sig = inspect.sinature(func)
+    sig = inspect.signature(func)
     params = sig.parameters
     found = False
     for name, param in params.items():
@@ -120,12 +118,12 @@ class RequestHandler(object):
 
             if request.method == 'POST':
                 if not request.content_type:
-                    return web.HTTPBadRequest('Missing Content-Type ')
+                    return web.HTTPBadRequest('Missing Content-Type. ')
                 ct = request.content_type.lower()
                 if ct.startswith('application/json'):
                     params = yield from request.json() # 如果请求json数据
-                    if isinstance(params, dict): # 参数如果不是dict类型，json body 报错
-                        return web.HTTPBadRequest('JSON body must be a object')
+                    if isinstance(params, dict):  # 参数如果不是dict类型，json body 报错
+                        return web.HTTPBadRequest('JSON body must be a object.')
                     kw = params
                 elif ct.startswith('application/x-www-form-urlencode') or ct.startswith('multipart/form-data'):
                     params = yield from request.post()
@@ -181,7 +179,7 @@ def add_route(app, fn):
     path = getattr(fn, '__route__', None)
     if path is None or method is None:
         raise ValueError('method @get or @post is not defined in %s' % str(fn))
-    if not asyncio.iscoroutine(fn) and not inspect.isgeneratororfunction(fn):
+    if not asyncio.iscoroutine(fn) and not inspect.isgeneratorfunction(fn):
         # 强制转换为协程
         fn = asyncio.coroutine(fn)
     logging.info('add route %s %s == > %s %s' % (method, path, fn.__name__, ' ,'.join(inspect.signature(fn).parameters.keys())))
@@ -207,7 +205,7 @@ def add_routes(app, module_name):
             method = getattr(fn, '__method__', None)
             path = getattr(fn, '__route__', None)
             if method and path:
-               add_route(app, fn)
+                add_route(app, fn)
 
 
 
