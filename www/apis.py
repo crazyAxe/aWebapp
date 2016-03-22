@@ -31,7 +31,7 @@ class APIPermissionError(APIError):
 
 
 class Page(object):
-    def __init__(self, item_count, page_index=1, page_size=2 ):
+    def __init__(self, item_count, page_index=1, page_size=2):
         self.item_count = item_count
         self.page_size = page_size
         self.page_count = item_count // page_size + (1 if item_count % page_size > 0 else 0)
