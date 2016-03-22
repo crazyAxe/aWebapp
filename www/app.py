@@ -27,6 +27,9 @@ import os
 from jinja2 import Environment, FileSystemLoader
 from aiohttp import web
 from handler import cookie2user, COOKIE_NAME
+from web_frame import add_routes, add_static
+from config import configs
+import orm
 
 def init_jinja2(app, **kw):
     logging.info('Init jinja2 ...')
@@ -49,7 +52,7 @@ def init_jinja2(app, **kw):
             env.filters[name] = f
     app['__templating__'] = env
 
-# --------------------------------------------middleware config---------------------------------------------
+# -------------------------------middleware config---------------------------------
 
 
 @asyncio.coroutine
@@ -132,3 +135,38 @@ def response_factory(app, handler):
             resp.content_type = 'text/plain;charset=utf-8'
             return resp
     return response
+
+
+def date_filter(t):
+    delta = int(time.time() - t)
+    if delta < 60:
+        return u'1分钟前'
+    if delta < 3600:
+        return u'%s分钟前' % (delta // 60)
+    if delta < 86400:
+        return u'%s小时前' % (delta // 3600)
+    if delta < 604800:
+        return u'%s天' % (delta // 86400)
+    dt = datetime.fromtimestamp(t)
+    return u'%s年%s月%s日' % (dt.year, dt.month, dt.day)
+
+
+@asyncio.coroutine
+def init(loop):
+    pool = yield from orm.create_pool(loop=loop, **configs.db)
+    app = web.Application(loop=loop, middlewares=[log_factory, auth_factory, response_factory])
+    init_jinja2(app, filters=dict(datetime=date_filter))
+    add_routes(app, 'handles')
+    add_static(app)
+    # 启动
+    srv = yield from loop.create_server(app.make_handler(), '127.0.0.1', '9000')
+    logging.info('server start at http://127.0.0.1:9000...')
+    return srv
+
+# 入口，固定写法
+loop = asyncio.get_event_loop()
+loop.run_until_complete(init(loop))
+loop.run_forever()
+
+
+
