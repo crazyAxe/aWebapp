@@ -9,7 +9,11 @@ configs = {
         'password': 'password',
         'database': 'myblog'
     },
+<<<<<<< HEAD
     'session': {
         'secret': 'aWeSoMe'
     }
+=======
+    'session': 'aWeSoMe'
+>>>>>>> fb70746cc061cea23ce1e727167c93268a4056c9
 }

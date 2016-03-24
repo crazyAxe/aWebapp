@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding:utf-8 -*-
+
 from models import User, Blog, Comment, next_id
 import logging;logging.basicConfig(level=logging.DEBUG)
 from web_frame import get, post
@@ -50,6 +51,11 @@ def cookie2user(cookie_str):
         logging.exception(e)
         return e
 
+from models import User, Blog, Comment
+import logging;logging.basicConfig(level=logging.INFO)
+from web_frame import get, post
+
+
 
 # -------------------------------用户管理--------------------------------
 
@@ -70,6 +76,7 @@ def api_get_users(request):
     for u in users:
         u.password = '******'
     return dict(users=users)
+
 
 # -----------------------------------------------------
 
@@ -104,3 +111,4 @@ def api_register_user(*, email, name, password):
     r.content_type = 'application/json;charset:utf-8'
     r.body = json.dumps(user, ensure_ascii=False).encode('utf-8')
     return r
+
