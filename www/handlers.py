@@ -5,19 +5,35 @@ from models import User, Blog, Comment, next_id
 import logging;logging.basicConfig(level=logging.DEBUG)
 from web_frame import get, post
 import re
-from apis import APIValueError, APIResourceNotFoundError, APIError
+from apis import APIValueError, APIResourceNotFoundError, APIError, Page
 import configs.session.secret
 import hashlib
 from aiohttp import web
 import time
 import json
 import asyncio
+from models import User, Blog, Comment
+import logging;logging.basicConfig(level=logging.INFO)
+from web_frame import get, post
+
+
 
 _RE_EMAIL = re.compile(r'^[a-z0-9\.\-\_]+\@[a-z0-9\-\_]+(\.[a-z0-9\-\_]+){1,4}$')
 _RE_SHA1 = re.compile(r'[0-9a-f]{40}$')
 
 _COOKIE_NAME = 'awesession'
 _COOKIE_KEY = configs.session.secret
+
+
+def get_page_index(page_str):
+    p = 1
+    try:
+        p = int(page_str)
+    except ValueError as e:
+        pass
+    if p < 1:
+        p = 1
+    return p
 
 
 def user2cookie(user, max_age):
@@ -51,10 +67,6 @@ def cookie2user(cookie_str):
         logging.exception(e)
         return e
 
-from models import User, Blog, Comment
-import logging;logging.basicConfig(level=logging.INFO)
-from web_frame import get, post
-
 
 
 # -------------------------------用户管理--------------------------------
@@ -76,6 +88,9 @@ def api_get_users(request):
     for u in users:
         u.password = '******'
     return dict(users=users)
+
+
+
 
 
 # -----------------------------------------------------
@@ -112,3 +127,56 @@ def api_register_user(*, email, name, password):
     r.body = json.dumps(user, ensure_ascii=False).encode('utf-8')
     return r
 
+
+# @post('/')
+# def index(request):
+#     summary = 'Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do eiusmod tempor incididunt ut ' \
+#               'labore et dolore magna aliqua.'
+#     blogs = [
+#         Blog(id='1', name='test blog', summary=summary, create_at=int(time.time())-120),
+#         Blog(id='2', name='something new', summary=summary, create_at=int(time.time())-120)
+#     ]
+#     return {
+#         '__template__': 'blog.html',
+#         'blog': blogs
+#     }
+
+@post('/')
+def index(*, page='1'):
+    page_index = get_page_index(page)
+    num = yield from Blog.findAll('count(id)')
+    page = Page(num, page_index)
+    if num == 0:
+        blogs = []
+    else:
+        blogs = yield from Blog.findAll(orderBy='create_at desc', limit=(page.offset, page.limit))
+    return {
+        '__template__': 'blogs.html',
+        'page': page,
+        'blogs': blogs
+    }
+
+@get('/register')
+def register():
+    return {
+        '__template__': 'register.html'
+    }
+
+@get('/signin')
+def signin():
+    return {
+        '__template__': 'signin.html'
+    }
+
+@get('/signout')
+def signout(request):
+    referer = request.headers.get('Referer')
+    r = web.HTTPFound(referer or '/')
+    r.set_cookie(_COOKIE_NAME, '-deleted-', max_age=0, httponly=None )
+    logging.info('user sign out')
+    return r
+
+
+
+@post('/api/blogs')
+def api_create_blog()
