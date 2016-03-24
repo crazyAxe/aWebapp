@@ -135,6 +135,7 @@ class Model(dict, metaclass=ModelMetaclass):
                 setattr(self, key, value)
         return value
 # ===============================================================
+
     @classmethod
     @asyncio.coroutine
     def find(cls, pk):
@@ -143,7 +144,6 @@ class Model(dict, metaclass=ModelMetaclass):
         if len(rs)==0:
             return None
         return cls(**rs[0])
-
 
     @classmethod
     @asyncio.coroutine
