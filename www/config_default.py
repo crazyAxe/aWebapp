@@ -9,5 +9,7 @@ configs = {
         'password': 'password',
         'database': 'myblog'
     },
-    'session': 'aWeSoMe'
+    'session': {
+        'secrect': 'aWeSoMe'
+    }
 }
