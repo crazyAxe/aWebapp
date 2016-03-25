@@ -12,15 +12,17 @@ import asyncio
 import logging; logging.basicConfig(level=logging.INFO)
 import aiomysql
 
+
 def log(sql, args=()):
     logging.info('SQL: %s' % sql)
+
 
 @asyncio.coroutine
 def create_pool(loop, **kw):
     logging.info('create data connection pool...')
     global __pool
     __pool = yield from aiomysql.create_pool(
-        host=kw.get('host', 'localhost'),  #get the 'host', if not, use 'localhost' instead
+        host=kw.get('host', 'localhost'),  # get the 'host', if not, use 'localhost' instead
         port=kw.get('port', 3306),
         user=kw['user'],
         password=kw['password'],
@@ -31,6 +33,7 @@ def create_pool(loop, **kw):
         minsize=kw.get('minsize', 1),
         loop=loop
     )
+
 
 @asyncio.coroutine
 def select(sql, args, size=None):
@@ -47,6 +50,7 @@ def select(sql, args, size=None):
         logging.info('row returned: %s' % len(rs))
         return rs
 
+
 @asyncio.coroutine
 def execute(sql, args):
     log(sql)
@@ -59,6 +63,7 @@ def execute(sql, args):
         except BaseException as e:
             raise
         return affected
+
 
 class ModelMetaclass(type):
     def __new__(cls, name, bases, attrs):
@@ -103,11 +108,13 @@ class ModelMetaclass(type):
         attrs['__delete__'] = 'delete from `%s` where `%s`=?' % (tableName, primaryKey)
         return type.__new__(cls, name, bases, attrs)
 
+
 def create_args_string(num):
     L = []
     for n in range(num):
         L.append('?')
     return ','.join(L)
+
 
 class Model(dict, metaclass=ModelMetaclass):
     def __init__(self, **kw):
@@ -140,8 +147,8 @@ class Model(dict, metaclass=ModelMetaclass):
     @asyncio.coroutine
     def find(cls, pk):
         'find object by primary key'
-        rs = yield from select('%s where `%s`=?' % (cls.__select__, cls.__primary_key__),[pk], 1)
-        if len(rs)==0:
+        rs = yield from select('%s where `%s`=?' % (cls.__select__, cls.__primary_key__), [pk], 1)
+        if len(rs) == 0:
             return None
         return cls(**rs[0])
 
@@ -212,33 +219,39 @@ class Model(dict, metaclass=ModelMetaclass):
             logging.warning('failed to insert record:affected rows: %s ' % rows)
 
 
-
-
 # =============================属性类=============================
+
+
 class Field(object):
     def __init__(self, name, column_type, primary_key, default):
         self.name = name
         self.column_type = column_type
         self.primary_key = primary_key
         self.default = default
+
     def __str__(self):
         return '<%s, %s:%s> ' % (self.__class__.__name__, self.column_type, self.name)
+
 
 class StringField(Field):
     def __init__(self, name=None, primary_key=False, default=None, ddl='varchar(100)'):
         super().__init__(name, ddl, primary_key, default)
 
+
 class BooleanField(Field):
     def __init__(self, name=None, default=False):
         super().__init__(name, 'boolean', False, default)
+
 
 class IntergerField(Field):
     def __init__(self, name=None, primary_key=False, default=0):
         super().__init__(name, 'biginit', primary_key, default)
 
+
 class FloatField(Field):
     def __init__(self, name=None, primary_key=False, default=0.0):
         super().__init__(name, 'real', primary_key, default)
+
 
 class TextField(Field):
     def __init__(self, name=None, default=None):

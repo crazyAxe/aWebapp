@@ -182,7 +182,8 @@ def add_route(app, fn):
     if not asyncio.iscoroutine(fn) and not inspect.isgeneratorfunction(fn):
         # 强制转换为协程
         fn = asyncio.coroutine(fn)
-    logging.info('add route %s %s == > %s %s' % (method, path, fn.__name__, ' ,'.join(inspect.signature(fn).parameters.keys())))
+    logging.info('add route %s %s == > %s %s' % (method, path, fn.__name__,
+                                                 ' ,'.join(inspect.signature(fn).parameters.keys())))
     # 正式注册为相应的url处理方法
     # 处理方法为RequestHandler的自省函数'__call__'
     app.router.add_route(method, path, RequestHandler(app, fn))
