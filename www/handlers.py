@@ -25,7 +25,7 @@ _COOKIE_KEY = configs.session.secret
 
 
 def check_admin(request):
-    if request.__user__ is None or not request.__user__.admin :
+    if request.__user__ is None or not request.__user__.admin:
         raise APIPermissionError()
 
 
@@ -320,4 +320,48 @@ def get_blog(id):
         '__template__': 'blog.html',
         'blog': blog,
         'comments': comments
+    }
+
+
+@get('/api/blogs/{id}')
+def api_get_blog(*, id):
+    blog = yield from Blog.find(id)
+    return blog
+
+
+@post('/api/blogs/{id}/delete')
+def api_delete_blog(request, id):
+    logging.info('delete a blog %s', id)
+    check_admin(request)
+    blog = yield from Blog.find(id)
+    if blog is None:
+        raise APIResourceNotFoundError('blog not found')
+    yield from blog.remove()
+    raise dict(id=id)
+
+
+# 修改博客
+@post('/api/blogs/modify')
+def api_modify_blog(request, *, id, name, summary, content):
+    logging.info('修改博客的id为: %s', id)
+    if not name or not name.strip():
+        raise APIValueError('name', ' name can not be empty.')
+    if not summary or not summary.strip():
+        raise APIValueError('summary', 'summary can not be empty')
+    if not content or not content.strip():
+        raise APIValueError('content', 'content can not be empty')
+    blog = yield from Blog.find(id)
+    blog.name = name
+    blog.summary = summary
+    blog.content = content
+    yield from blog.update()
+    return blog
+
+
+@get('/manage/blogs/manage/{id}')
+def manage_modify_blog(id):
+    return {
+        '__template__': 'manage_blog_modify.html',
+        'id': id,
+        'action': '/api/blogs/modify'
     }
