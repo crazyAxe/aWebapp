@@ -1,0 +1,41 @@
+{% extends '__base__.html' %}
+
+{% block title %} blog {% blockend %}
+
+{% block beforehead %}
+
+<script>
+    function(data){
+        var vm = new Vue({
+            el: '#vm',
+            data: data.blogs,
+            method: {
+                edit_blog: function (blog) {
+                    location.assign('/manage/blog/modify/' + blog.id);
+                },
+                delete_blog: function(blog) {
+                    if(confirm('are u sure to delete blog'+blog.id+'? Cant recovery once deleted')){
+                        postJSON('/api/blogs/'+blog.id+'/delete', function(err, r){
+                            if(err){
+                                return alert(err.message || err.error ||err);
+                            }
+                            refresh();
+                        });
+                    }
+                }
+            }
+        });
+        $('#vm').show();
+    }
+    $(function () {
+        getJSON('/api/blogs',{
+            page: {{ page_index }}
+        }, function(err, results){
+            if(err){
+                return fatal(err);
+            }
+            $('#loading').hide();
+            initVM(results);
+        });
+    });
+</script>
