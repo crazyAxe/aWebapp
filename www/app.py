@@ -5,36 +5,37 @@ import logging; logging.basicConfig(level=logging.INFO)
 
 import asyncio, os, json, time
 from datetime import datetime
-
+import os
+from jinja2 import Environment, FileSystemLoader
 from aiohttp import web
+from handlers import cookie2user, _COOKIE_NAME
+from web_frame import add_routes, add_static
+from config import configs
+import orm
 
-# def index(request):
-#     return web.Response(body=b'<h1>Awesome</h1>')
-#
+
+def index(request):
+    return web.Response(body=b'<h1>Awesome</h1>')
+
+
 # @asyncio.coroutine
 # def init(loop):
 #     app = web.Application(loop=loop)
 #     app.router.add_route('GET', '/', index)
-#     srv = yield from loop.create_server(app.make_handler(), '127.0.0.1', 9000)
-#     logging.info('server started at http:/127.0.0.1:9000...')
+#     srv = yield from loop.create_server(app.make_handler(), '127.0.0.1', 3306)
+#     logging.info('server started at http:/127.0.0.1:3306...')
 #     return srv
 #
 # loop = asyncio.get_event_loop()
 # loop.run_until_complete(init(loop))
 # loop.run_forever()
 
-import os
-from jinja2 import Environment, FileSystemLoader
-from aiohttp import web
-from handler import cookie2user, COOKIE_NAME
-from web_frame import add_routes, add_static
-from config import configs
-import orm
+
 
 def init_jinja2(app, **kw):
     logging.info('Init jinja2 ...')
     options = dict(
-        autoescape=kw.get('autoescpte', True),
+        autoescape=kw.get('autoescape', True),
         block_start_string=kw.get('block_start_string', '{%'),
         block_end_string=kw.get('block_end_string', '%}'),
         variable_start_string=kw.get('variable_start_string', '{{'),
@@ -43,7 +44,7 @@ def init_jinja2(app, **kw):
     )
     path = kw.get('path', None)
     if path is None:
-        path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'template')
+        path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'templates')
     logging.info('set jinja2 template path:%s' % path)
     env = Environment(loader=FileSystemLoader(path), **options)
     filters = kw.get('filters', None)
@@ -51,6 +52,7 @@ def init_jinja2(app, **kw):
         for name, f in filters.items():
             env.filters[name] = f
     app['__templating__'] = env
+
 
 # -------------------------------middleware config---------------------------------
 
@@ -85,15 +87,16 @@ def auth_factory(app, handler):
     def auth(request):
         logging.info('check user : %s %s' % (request.method, request.path))
         request.__user__ = None
-        cookie_usr = request.cookies.get(COOKIE_NAME)
-        if cookie_usr:
-            user = yield from cookie2user(cookie_usr)
-            logging.info('current user : ' % user.email)
-            request.__user__ = user
+        cookie_str = request.cookies.get(_COOKIE_NAME)
+        if cookie_str:
+            user = yield from cookie2user(cookie_str)
+            if user:
+                logging.info('current user : ' % user.email)
+                request.__user__ = user
         if request.path.startswith('/manage/') and (request.__user__ is None or not request.__user__.admin):
             return web.HTTPFound('/signin')
         return (yield from handler(request))
-    return auth_factory
+    return auth
 
 
 @asyncio.coroutine
@@ -118,11 +121,13 @@ def response_factory(app, handler):
         if isinstance(r, dict):
             template = r.get('__template__')
             if template is None:
-                reps = web.Response(json.dumps(r, ensure_ascii=False, default=lambda o : o.__dict__).encode('utf-8'))
-                reps.content_type = 'application/json;charset=utf-8'
+                resp = web.Response(body=json.dumps(r, ensure_ascii=False,
+                                                    default=lambda o: o.__dict__).encode('utf-8'))
+                resp.content_type = 'application/json;charset=utf-8'
+                return resp
             else:
                 r['__user__'] = request.__user__
-                resp = web.Response(body=app['__templating__'].getTemplate(template).render(**r).encode('utf-8'))
+                resp = web.Response(body=app['__templating__'].get_template(template).render(**r).encode('utf-8'))
                 resp.content_type = 'text/html;charset=utf-8'
                 return resp
         if isinstance(r, int) and r >= 100 and r < 600:
@@ -130,7 +135,7 @@ def response_factory(app, handler):
         if isinstance(r, tuple) and len(r) == 2:
             s, m = r
             if isinstance(s, int) and s >=100 and s < 600:
-                return web.Response(status=s, text=m)
+                return web.Response(status=s, text=str(m))
             resp = web.Response(body=str(r).encode('utf-8'))
             resp.content_type = 'text/plain;charset=utf-8'
             return resp
@@ -154,12 +159,14 @@ def date_filter(t):
 @asyncio.coroutine
 def init(loop):
     pool = yield from orm.create_pool(loop=loop, **configs.db)
-    app = web.Application(loop=loop, middlewares=[log_factory, auth_factory, response_factory])
+    app = web.Application(loop=loop, middlewares=[
+        log_factory, auth_factory, response_factory
+    ])
     init_jinja2(app, filters=dict(datetime=date_filter))
-    add_routes(app, 'handles')
+    add_routes(app, 'handlers')
     add_static(app)
     # 启动
-    srv = yield from loop.create_server(app.make_handler(), '127.0.0.1', '9000')
+    srv = yield from loop.create_server(app.make_handler(), '127.0.0.1', 9000)
     logging.info('server start at http://127.0.0.1:9000...')
     return srv
 

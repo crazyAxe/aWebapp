@@ -4,16 +4,12 @@
 configs = {
     'db': {
         'host': '127.0.0.1',
-        'port': '3306',
-        'user': 'wang',
+        'port': 3306,
+        'user': 'root',
         'password': 'password',
-        'database': 'myblog'
+        'db': 'myblog'
     },
-<<<<<<< HEAD
     'session': {
-        'secret': 'aWeSoMe'
+        'secret': 'AwEsOmE'
     }
-=======
-    'session': 'aWeSoMe'
->>>>>>> fb70746cc061cea23ce1e727167c93268a4056c9
 }

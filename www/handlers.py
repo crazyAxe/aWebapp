@@ -3,10 +3,9 @@
 
 from models import User, Blog, Comment, next_id
 import logging;logging.basicConfig(level=logging.DEBUG)
-from web_frame import get, post
 import re
 from apis import APIValueError, APIResourceNotFoundError, APIError, Page, APIPermissionError
-import configs.session.secret
+from config import configs
 import hashlib
 from aiohttp import web
 import time
@@ -79,7 +78,7 @@ def cookie2user(cookie_str):
 
 
 @get('/')
-def index(*, page=1):
+def index(*, page='1'):
     page_index = get_page_index(page)
     num = yield from Blog.findNumber('count(id)')
     page = Page(num, page_index)
@@ -237,7 +236,7 @@ def show_all_user(request):
     users = yield from User.findAll()
     logging.info('index ...')
     return {
-        'template': 'test.html',
+        '__template__': 'test.html',
         'users': users
     }
 
@@ -330,7 +329,7 @@ def api_get_blog(*, id):
 
 
 @post('/api/blogs/{id}/delete')
-def api_delete_blog(request, id):
+def api_delete_blog(id, request):
     logging.info('delete a blog %s', id)
     check_admin(request)
     blog = yield from Blog.find(id)

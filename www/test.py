@@ -8,7 +8,7 @@ from models import User, Blog, Comment
 
 @asyncio.coroutine
 def test_save(loop):
-    yield from orm.create_pool(loop=loop, user='root', password='password', db='myblog')
+    yield from orm.create_pool(loop=loop, user='root', password='password', dbe='myblog')
     u = User(name='Test', password='123456', email='test@example.com', image='about:blank')
 
     yield from u.save()

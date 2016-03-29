@@ -48,7 +48,7 @@ def get_required_kw_args(func):
 
     args = []
     params = inspect.signature(func).parameters
-    for name, param in params.itmes():
+    for name, param in params.items():
         if param.kind == inspect.Parameter.KEYWORD_ONLY and param.default == inspect.Parameter.empty:
             args.append(name)
     return tuple(args)
@@ -93,9 +93,10 @@ def has_request_args(func):
         if name == 'request':
             found = True
             continue
-        if found is True and (param.kind != inspect.Parameter.KEYWORD_ONLY and param.kind != inspect.Parameter.VAR_KEYWORD \
-            and param.kind != inspect.Parameter.VAR_POSITIONAL):
-            raise ValueError('request parameter must be the last named parameter in function: %s%s' % (func.__name__, str(sig)))
+        if found and (param.kind != inspect.Parameter.KEYWORD_ONLY and param.kind != inspect.Parameter.VAR_KEYWORD
+                              and param.kind != inspect.Parameter.VAR_POSITIONAL):
+            raise ValueError('request parameter must be the last named parameter in function: %s %s' %
+                             (func.__name__, str(sig)))
     return found
 
 
@@ -194,9 +195,10 @@ def add_routes(app, module_name):
     # 自动搜索传入module_name的module的url处理函数
     # python rfind()函数返回字符串最后一次出现的位子，如果没有则返回-1
     n = module_name.rfind('.')
-    if n == -1:
+    logging.info('n = %s', n)
+    if n == (-1):
         mod = __import__(module_name, globals(), locals())
-        logging.info('globals : %s' % globals()['__name__'])
+        logging.info('globals = %s' % globals()['__name__'])
     else:
         mod = __import__(module_name[:n], globals(), locals())
     for attr in dir(mod):
